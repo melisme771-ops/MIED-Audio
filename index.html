@@ -2944,7 +2944,7 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
 </style>
 <script>
 (() => {
-  const MIED_AUDIO_BASE='https://cdn.jsdelivr.net/gh/melisme771-ops/MIED-Audio@main/';
+  const MIED_AUDIO_BASE='https://raw.githubusercontent.com/melisme771-ops/MIED-Audio/main/';
   const MIED_MUSIC_TRACKS=Array.from({length:20},(_,index)=>{
     const number=String(index+1).padStart(2,'0');
     return{id:`melody-${number}`,label:`正念音乐 ${number}`,url:`${MIED_AUDIO_BASE}melody-${number}.mp3`};
