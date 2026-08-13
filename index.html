@@ -2944,7 +2944,7 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
 </style>
 <script>
 (() => {
-  const MIED_AUDIO_BASE='https://melisme771-ops.github.io/MIED-Audio/';
+  const MIED_AUDIO_BASE='https://cdn.jsdelivr.net/gh/melisme771-ops/MIED-Audio@main/';
   const MIED_MUSIC_TRACKS=Array.from({length:20},(_,index)=>{
     const number=String(index+1).padStart(2,'0');
     return{id:`melody-${number}`,label:`正念音乐 ${number}`,url:`${MIED_AUDIO_BASE}melody-${number}.mp3`};
@@ -2977,13 +2977,25 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
     const wasPlaying=!!practiceTimer;
     const total=(typeof v15PracticeSession!=='undefined'&&v15PracticeSession.totalSeconds)||Math.max(180,(practices.find(item=>item.title===currentPractice)?.time||5)*60);
     if(practiceElapsed>=total){practiceElapsed=0;practiceCreditedMax=0;updatePracticePlayer(total);stopMusic(true)}
-    baseStartPracticePlayback();
     if(wasPlaying){stopMusic(false);return}
-    if(selectedTrack){practiceMusic.loop=true;practiceMusic.play().catch(()=>setMusicStatus('浏览器未能开始播放，请再次点击播放按钮。',true))}
-    const completionWatcher=setInterval(()=>{
-      if(practiceElapsed>=total){clearInterval(completionWatcher);stopMusic(true);setMusicStatus('本次练习时间已完成，音乐已自动停止。')}
-      else if(!practiceTimer){clearInterval(completionWatcher);stopMusic(false)}
-    },500);
+    const watchCompletion=()=>{
+      const completionWatcher=setInterval(()=>{
+        if(practiceElapsed>=total){clearInterval(completionWatcher);stopMusic(true);setMusicStatus('本次练习时间已完成，音乐已自动停止。')}
+        else if(!practiceTimer){clearInterval(completionWatcher);stopMusic(false)}
+      },500);
+    };
+    if(selectedTrack){
+      playButton.disabled=true;setMusicStatus(`正在载入：${selectedTrack.label}…`);
+      const startSelectedMusic=async()=>{
+        try{
+          practiceMusic.loop=true;await practiceMusic.play();
+          if(!practiceTimer)baseStartPracticePlayback();
+          watchCompletion();
+        }catch(error){stopMusic(false);setMusicStatus('音乐载入失败，请检查网络后再次点击播放。',true)}
+        finally{playButton.disabled=false}
+      };
+      startSelectedMusic();
+    }else{baseStartPracticePlayback();watchCompletion()}
   };
   playButton.onclick=startPracticePlayback;
   const slider=$('practiceSlider');
