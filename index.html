@@ -2944,7 +2944,7 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
 </style>
 <script>
 (() => {
-  const MIED_AUDIO_BASE='https://raw.githubusercontent.com/melisme771-ops/MIED-Audio/main/';
+  const MIED_AUDIO_BASE='https://melisme771-ops.github.io/MIED-Audio/';
   const MIED_MUSIC_TRACKS=Array.from({length:20},(_,index)=>{
     const number=String(index+1).padStart(2,'0');
     return{id:`melody-${number}`,label:`正念音乐 ${number}`,url:`${MIED_AUDIO_BASE}melody-${number}.mp3`};
@@ -2977,7 +2977,7 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
     const wasPlaying=!!practiceTimer;
     const total=(typeof v15PracticeSession!=='undefined'&&v15PracticeSession.totalSeconds)||Math.max(180,(practices.find(item=>item.title===currentPractice)?.time||5)*60);
     if(practiceElapsed>=total){practiceElapsed=0;practiceCreditedMax=0;updatePracticePlayer(total);stopMusic(true)}
-    if(wasPlaying){stopMusic(false);return}
+    if(wasPlaying){stopPracticeTimer();return}
     const watchCompletion=()=>{
       const completionWatcher=setInterval(()=>{
         if(practiceElapsed>=total){clearInterval(completionWatcher);stopMusic(true);setMusicStatus('本次练习时间已完成，音乐已自动停止。')}
