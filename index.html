@@ -2941,6 +2941,10 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
 .music-player-status{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.72);border:1px solid #dce9e3;color:#60716f;font-size:13px}
 .music-player-status.error{background:#fff3f1;border-color:#efcfca;color:#8b4a46}
 #musicSelect{max-width:min(330px,72vw)}
+.practice-volume-panel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.practice-volume-control{padding:10px 12px;border-radius:13px;background:rgba(255,255,255,.72);border:1px solid #dce9e3;color:#526763;font-size:13px;font-weight:800}
+.practice-volume-control span{display:flex;justify-content:space-between;gap:8px;margin-bottom:7px}.practice-volume-control input{width:100%;accent-color:#2e746b}
+@media(max-width:560px){.practice-volume-panel{grid-template-columns:1fr}}
 </style>
 <script>
 (() => {
@@ -2953,9 +2957,25 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
   if(!musicSelect||!playButton)return;
   musicSelect.innerHTML='<option value="none">不播放音乐（仅计时）</option>'+MIED_MUSIC_TRACKS.map(track=>`<option value="${track.id}">${track.label}</option>`).join('');
   musicSelect.insertAdjacentHTML('afterend','<audio id="practiceMusic" preload="metadata" loop></audio>');
+  $('practiceAudioBox').querySelector('.audio-controls').insertAdjacentHTML('afterend','<div class="practice-volume-panel"><label class="practice-volume-control"><span><b>指导语音量</b><output id="guideVolumeValue">80%</output></span><input id="guideVolume" type="range" min="0" max="100" value="80" aria-label="指导语音量"></label><label class="practice-volume-control"><span><b>背景音乐音量</b><output id="musicVolumeValue">55%</output></span><input id="musicVolume" type="range" min="0" max="100" value="55" aria-label="背景音乐音量"></label></div>');
   $('practiceAudioBox').insertAdjacentHTML('beforeend','<div class="music-player-status" id="musicPlayerStatus">请选择一首音乐；音乐短于练习时长时会自动循环。</div>');
-  const practiceMusic=$('practiceMusic'),musicStatus=$('musicPlayerStatus');
+  const practiceMusic=$('practiceMusic'),musicStatus=$('musicPlayerStatus'),guideVolume=$('guideVolume'),musicVolume=$('musicVolume');
   let selectedTrack=null;
+  const volumeStoreKey='mied-practice-volumes-v1';
+  let savedVolumes={guide:80,music:55};try{savedVolumes={...savedVolumes,...JSON.parse(localStorage.getItem(volumeStoreKey)||'{}')}}catch(error){}
+  guideVolume.value=savedVolumes.guide;musicVolume.value=savedVolumes.music;practiceMusic.volume=Number(musicVolume.value)/100;
+  function renderVolumes(){$('guideVolumeValue').textContent=`${guideVolume.value}%`;$('musicVolumeValue').textContent=`${musicVolume.value}%`}
+  function saveVolumes(){localStorage.setItem(volumeStoreKey,JSON.stringify({guide:Number(guideVolume.value),music:Number(musicVolume.value)}));renderVolumes()}
+  renderVolumes();
+  guideVolume.oninput=saveVolumes;
+  musicVolume.oninput=()=>{practiceMusic.volume=Number(musicVolume.value)/100;saveVolumes()};
+  function stopGuidance(){if('speechSynthesis'in window)window.speechSynthesis.cancel()}
+  function speakGuidance(){
+    if(!('speechSynthesis'in window)||Number(guideVolume.value)===0||!currentPractice)return;
+    stopGuidance();const p=practices.find(item=>item.title===currentPractice);if(!p)return;
+    const utterance=new SpeechSynthesisUtterance(`${p.title}。${p.desc}。${(p.steps||[]).join('。')}`);
+    utterance.lang='zh-CN';utterance.rate=.82;utterance.pitch=1;utterance.volume=Number(guideVolume.value)/100;window.speechSynthesis.speak(utterance);
+  }
   function setMusicStatus(message,isError=false){musicStatus.textContent=message;musicStatus.classList.toggle('error',isError)}
   function stopMusic(reset=false){practiceMusic.pause();if(reset){try{practiceMusic.currentTime=0}catch(error){}}}
   function selectTrack(){
@@ -2967,11 +2987,11 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
   practiceMusic.addEventListener('error',()=>setMusicStatus('音乐载入失败，请检查网络后重新选择或重试。',true));
   practiceMusic.addEventListener('playing',()=>selectedTrack&&setMusicStatus(`正在播放：${selectedTrack.label} · 循环开启`));
   const baseOpenPractice=openPractice;
-  openPractice=function(title){stopMusic(true);baseOpenPractice(title);selectTrack()};
+  openPractice=function(title){stopMusic(true);stopGuidance();baseOpenPractice(title);selectTrack()};
   const baseStopPracticeTimer=stopPracticeTimer;
   const baseStartPracticePlayback=startPracticePlayback;
   const baseSliderInput=$('practiceSlider').oninput;
-  stopPracticeTimer=function(){baseStopPracticeTimer();stopMusic(false)};
+  stopPracticeTimer=function(){baseStopPracticeTimer();stopMusic(false);stopGuidance()};
   startPracticePlayback=function(){
     if(!currentPractice)return;
     const wasPlaying=!!practiceTimer;
@@ -2990,12 +3010,13 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
         try{
           practiceMusic.loop=true;await practiceMusic.play();
           if(!practiceTimer)baseStartPracticePlayback();
+          speakGuidance();
           watchCompletion();
         }catch(error){stopMusic(false);setMusicStatus('音乐载入失败，请检查网络后再次点击播放。',true)}
         finally{playButton.disabled=false}
       };
       startSelectedMusic();
-    }else{baseStartPracticePlayback();watchCompletion()}
+    }else{baseStartPracticePlayback();speakGuidance();watchCompletion()}
   };
   playButton.onclick=startPracticePlayback;
   const slider=$('practiceSlider');
@@ -3005,7 +3026,7 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
     const total=(typeof v15PracticeSession!=='undefined'&&v15PracticeSession.totalSeconds)||Math.max(180,(practices.find(item=>item.title===currentPractice)?.time||5)*60);
     if(practiceElapsed>=total){stopMusic(true);setMusicStatus('本次练习时间已完成，音乐已自动停止。')}
   };
-  $('closePractice').onclick=()=>{stopPracticeTimer();stopMusic(true);hideModal('practiceModal')};
+  $('closePractice').onclick=()=>{stopPracticeTimer();stopMusic(true);stopGuidance();hideModal('practiceModal')};
   window.__MIED_MUSIC_TRACKS__=MIED_MUSIC_TRACKS;
   document.documentElement.dataset.audioPlayerVersion='v19';
 })();
