@@ -3089,5 +3089,30 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
   if($('mindfulnessForestV21'))renderJourney();
 })();
 </script>
+<style>
+/* v23: meaning construction is a fourth peer practice category */
+#practice>.meaning-module{display:none}
+.practice-mode.meaning{background:#f5edff;color:#76569a}
+.meaning-practice-placeholder-v23{position:relative;overflow:hidden;border-color:#e2d7ec;background:linear-gradient(145deg,#fff,#faf6ff)}
+.meaning-practice-placeholder-v23:after{content:"";position:absolute;right:-22px;top:-26px;width:100px;height:100px;border-radius:50%;background:rgba(146,111,180,.08)}
+.meaning-practice-placeholder-v23 .meaning-mark-v23{display:grid;place-items:center;width:42px;height:42px;margin-bottom:12px;border-radius:14px;background:#f3eafb;color:#76569a;font-size:20px;font-weight:900}
+.meaning-practice-placeholder-v23 .meaning-status-v23{display:inline-flex;margin-top:12px;padding:7px 10px;border-radius:999px;background:#f6f1fa;color:#7b678e;font-size:12px;font-weight:800}
+</style>
+<script>
+(()=>{
+  practiceCategories.meaning={label:'意义建构',desc:'整理经验、连接价值与新的理解'};
+  const baseRenderPracticesV23=renderPractices;
+  renderPractices=function(){
+    baseRenderPracticesV23();
+    const filter=state.ui.practiceFilter||'all',list=$('practiceList');
+    if(!list||(filter!=='all'&&filter!=='meaning'))return;
+    const section=document.createElement('section');
+    section.className='practice-section';
+    section.innerHTML=`<div class="practice-section-head"><h4>意义建构</h4><p>整理重要经验，连接个人价值，并逐步形成新的理解。</p></div><div class="practice-list"><article class="practice meaning-practice-placeholder-v23"><div class="meaning-mark-v23">✦</div><span class="practice-mode meaning">意义建构</span><h4>意义建构练习</h4><p>具体练习内容将在研究团队确认后加入。</p><span class="meaning-status-v23">内容准备中</span></article></div>`;
+    list.appendChild(section);
+  };
+  renderPractices();
+})();
+</script>
 </body>
 </html>
