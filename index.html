@@ -3076,6 +3076,12 @@ function setup(){migrateLegacyAssessment();renderAll();renderEduLesson(activeLes
   const baseRenderJourneyV22=renderJourney;
   renderJourney=function(){
     baseRenderJourneyV22();
+    const stageNamesV22=['子叶苗','真叶苗','幼树','成熟树'];
+    const conditionRowsV22={'健康生长':0,'轻度缺水':1,'中度缺水':1,'病虫风险':2,'重度压力':3,'休眠封存':3};
+    const stageColV22=Math.max(0,stageNamesV22.indexOf($('forestStageV21')?.textContent||''));
+    const conditionRowV22=conditionRowsV22[$('forestConditionV21')?.textContent||'']??0;
+    const artV22=$('forestTreeArtV21');
+    if(artV22){artV22.style.backgroundImage=`url('./q-tree-${conditionRowV22}-${stageColV22}.png')`;artV22.style.backgroundSize='contain';artV22.style.backgroundPosition='center';}
     const copy=$('forestStageCopyV21'),hint=$('forestGrowthHintV21');
     if(copy&&hint&&copy.parentElement!==hint.parentElement){copy.className='forest-stage-copy-v22';hint.parentElement.insertBefore(copy,hint)}
     if(copy)copy.style.display='block';
